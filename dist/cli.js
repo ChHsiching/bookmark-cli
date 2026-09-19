@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { createClipboardReader } from './clipboard.js';
 import { runAdd } from './commands/add.js';
 import { runEdit } from './commands/edit.js';
@@ -122,9 +123,22 @@ export async function main(argv = process.argv) {
         throw err;
     }
 }
+/**
+ * True when this module is the Node entry script. Node resolves the entry
+ * through symlinks (junction-based node installs like nvm-windows, Homebrew),
+ * so argv[1] can name a different path than import.meta.url; comparing
+ * realpaths handles that, and Windows paths compare case-insensitively.
+ */
 const invokedAsScript = (() => {
+    const entry = process.argv[1];
+    if (!entry)
+        return false;
     try {
-        return import.meta.url === pathToFileURL(resolve(process.argv[1] ?? '')).href;
+        const invoked = realpathSync(resolve(entry));
+        const modulePath = realpathSync(fileURLToPath(import.meta.url));
+        return process.platform === 'win32'
+            ? invoked.toLowerCase() === modulePath.toLowerCase()
+            : invoked === modulePath;
     }
     catch {
         return false;
