@@ -148,8 +148,10 @@ bm import backup.json
 ```bash
 git clone https://github.com/ChHsiching/bookmark-cli
 cd bookmark-cli
-npm install        # 会通过 prepare 脚本自动构建 dist/
+npm install
 npm test           # 构建 + 全部测试
 ```
+
+`dist/`（编译产物）直接提交在仓库里：本工具从 GitHub 安装、不发布 npm registry，提交构建产物让 `npm i -g github:...` 无需在安装时编译。改动 `src/` 后记得 `npm run build` 并把 `dist/` 一并提交。
 
 领域术语见 [CONTEXT.md](CONTEXT.md)；为什么只有标签没有文件夹见 [docs/adr/0001-tags-only-no-folders.md](docs/adr/0001-tags-only-no-folders.md)。
