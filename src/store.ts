@@ -111,6 +111,15 @@ export class Store {
   }
 
   /**
+   * Wrap already-composed data as a Store bound to `path` without reading any
+   * file. Used by restore-style import, which merges the data itself and then
+   * persists through the usual atomic save().
+   */
+  static adopt(path: string, data: StoreData): Store {
+    return new Store(path, data);
+  }
+
+  /**
    * Full rewrite of the store file, human-readable (2-space indentation,
    * trailing newline). Writes via a temp file + rename so a crash mid-write
    * cannot truncate the existing store.
