@@ -204,6 +204,23 @@ describe('search --open / open <id> with an injected opener', () => {
     expect(logSpy).toHaveBeenCalledWith('Opened #1 https://rust-lang.org');
   });
 
+  it('search --open --json keeps stdout pure JSON; the open notice goes to stderr', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await runSearch('rust', { open: true, json: true }, { store, opener: fakeOpener });
+      expect(openedUrls).toEqual(['https://rust-lang.org']);
+      // stdout saw exactly one write and it parses as the JSON array — no
+      // human notice ahead of the payload (that is the --json contract).
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const arr = JSON.parse(logSpy.mock.calls[0]![0] as string) as unknown[];
+      expect(arr).toHaveLength(2);
+      // The notice is kept, on stderr.
+      expect(errSpy).toHaveBeenCalledWith('Opened #1 https://rust-lang.org');
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
   it('search --open with no matches raises a CliError without opening', async () => {
     await expect(
       runSearch('zzznomatch', { open: true }, { store, opener: fakeOpener }),

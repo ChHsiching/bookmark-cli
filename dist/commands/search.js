@@ -23,9 +23,15 @@ export async function runSearch(query, opts, deps = {}) {
         catch (err) {
             throw new CliError(`Failed to open #${best.id} (${best.url}): ${err.message}`);
         }
-        console.log(`Opened #${best.id} ${best.url}`);
+        // The "Opened" notice is human-facing progress, not data. With --json
+        // stdout must stay machine-pure (jq-parseable), so the notice moves to
+        // stderr — kept rather than dropped, the information still travels.
         if (opts.json) {
+            console.error(`Opened #${best.id} ${best.url}`);
             console.log(JSON.stringify(results, null, 2));
+        }
+        else {
+            console.log(`Opened #${best.id} ${best.url}`);
         }
         return;
     }
