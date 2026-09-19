@@ -11,3 +11,7 @@ The five canonical triage labels are used unchanged: `needs-triage`, `needs-info
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Known issues
+
+npm install failures (rolldown native binding) or surprising lockfile diffs: `docs/agents/known-issues.md`.
