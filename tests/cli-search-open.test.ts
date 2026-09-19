@@ -155,7 +155,8 @@ describe('cli search/open smoke', () => {
     await seed();
     const res = await bm('open', 'abc');
     expect(res.code).not.toBe(0);
-    expect(res.stderr.toLowerCase()).toContain('invalid bookmark id');
+    // Same parseId (and therefore same wording) as edit/rm.
+    expect(res.stderr.toLowerCase()).toContain('invalid id');
   });
 });
 

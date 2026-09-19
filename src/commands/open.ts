@@ -1,20 +1,12 @@
 import { defaultOpener, Opener } from '../opener.js';
 import { Store } from '../store.js';
 import { CliError } from '../types.js';
+import { parseId } from './id.js';
 
 /** Dependencies that tests (and later tickets) can inject. */
 export interface OpenDeps {
   store?: Store;
   opener?: Opener;
-}
-
-/** Parse a user-supplied id argument: a positive integer, nothing else. */
-export function parseId(raw: string): number {
-  const trimmed = raw.trim();
-  if (!/^\d+$/.test(trimmed) || Number(trimmed) < 1) {
-    throw new CliError(`Invalid bookmark id: ${raw}`);
-  }
-  return Number(trimmed);
 }
 
 export async function runOpen(rawId: string, deps: OpenDeps = {}): Promise<void> {

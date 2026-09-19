@@ -1,14 +1,7 @@
 import { defaultOpener } from '../opener.js';
 import { Store } from '../store.js';
 import { CliError } from '../types.js';
-/** Parse a user-supplied id argument: a positive integer, nothing else. */
-export function parseId(raw) {
-    const trimmed = raw.trim();
-    if (!/^\d+$/.test(trimmed) || Number(trimmed) < 1) {
-        throw new CliError(`Invalid bookmark id: ${raw}`);
-    }
-    return Number(trimmed);
-}
+import { parseId } from './id.js';
 export async function runOpen(rawId, deps = {}) {
     const id = parseId(rawId);
     const store = deps.store ?? Store.load();
