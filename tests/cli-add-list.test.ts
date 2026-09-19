@@ -1,59 +1,20 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { Store, resolveStorePath } from '../src/store.js';
+import { existsSync, readFileSync } from 'node:fs';
+import { Store } from '../src/store.js';
+import { CliSandbox, createCliSandbox } from './helpers.js';
 
-const run = promisify(execFile);
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const cli = join(repoRoot, 'dist', 'cli.js');
-
-let dataDir: string;
-let homeDir: string;
-let childEnv: NodeJS.ProcessEnv;
-
+let sb: CliSandbox;
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'bm-cli-'));
-  homeDir = mkdtempSync(join(tmpdir(), 'bm-cli-home-'));
-  // Redirect every platform-conventional location into the sandbox so the
-  // smoke tests never touch the real user directory, on any host platform.
   // BM_NO_TITLE_FETCH keeps these subprocess adds hermetic: since T2 the
   // default add fetches the page title, which these tests must not do.
-  childEnv = {
-    ...process.env,
-    APPDATA: dataDir,
-    HOME: homeDir,
-    XDG_CONFIG_HOME: join(homeDir, '.config'),
-    BM_NO_TITLE_FETCH: '1',
-  };
+  sb = createCliSandbox({ noTitleFetch: true });
 });
 afterEach(() => {
-  rmSync(dataDir, { recursive: true, force: true });
-  rmSync(homeDir, { recursive: true, force: true });
+  sb.cleanup();
 });
 
-const storePath = () => resolveStorePath(childEnv, process.platform);
-
-interface RunResult {
-  code: number;
-  stdout: string;
-  stderr: string;
-}
-
-async function bm(...args: string[]): Promise<RunResult> {
-  try {
-    const { stdout, stderr } = await run(process.execPath, [cli, ...args], {
-      env: childEnv,
-    });
-    return { code: 0, stdout, stderr };
-  } catch (err) {
-    const e = err as { code?: number; stdout?: string; stderr?: string };
-    return { code: e.code ?? -1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' };
-  }
-}
+const storePath = () => sb.storePath();
+const bm = (...args: string[]) => sb.bm(...args);
 
 describe('cli add/list smoke', () => {
   it('add -> duplicate error with existing id -> --force updates in place', async () => {

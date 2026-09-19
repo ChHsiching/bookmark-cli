@@ -1,56 +1,18 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { resolveStorePath } from '../src/store.js';
+import { CliSandbox, createCliSandbox } from './helpers.js';
 
-const run = promisify(execFile);
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const cli = join(repoRoot, 'dist', 'cli.js');
-
-let dataDir: string;
-let homeDir: string;
-let childEnv: NodeJS.ProcessEnv;
-
+let sb: CliSandbox;
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'bm-cli-'));
-  homeDir = mkdtempSync(join(tmpdir(), 'bm-cli-home-'));
-  // Redirect every platform-conventional location into the sandbox so the
-  // smoke tests never touch the real user directory, on any host platform.
-  childEnv = {
-    ...process.env,
-    APPDATA: dataDir,
-    HOME: homeDir,
-    XDG_CONFIG_HOME: join(homeDir, '.config'),
-  };
+  sb = createCliSandbox();
 });
 afterEach(() => {
-  rmSync(dataDir, { recursive: true, force: true });
-  rmSync(homeDir, { recursive: true, force: true });
+  sb.cleanup();
 });
 
-const storePath = () => resolveStorePath(childEnv, process.platform);
-
-interface RunResult {
-  code: number;
-  stdout: string;
-  stderr: string;
-}
-
-async function bm(...args: string[]): Promise<RunResult> {
-  try {
-    const { stdout, stderr } = await run(process.execPath, [cli, ...args], {
-      env: childEnv,
-    });
-    return { code: 0, stdout, stderr };
-  } catch (err) {
-    const e = err as { code?: number; stdout?: string; stderr?: string };
-    return { code: e.code ?? -1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' };
-  }
-}
+const storePath = () => sb.storePath();
+const bm = (...args: string[]) => sb.bm(...args);
 
 describe('cli export smoke', () => {
   it('default format is markdown: grouped by tag, multiple entrances, 无标签 last', async () => {
@@ -99,7 +61,7 @@ describe('cli export smoke', () => {
     await bm('add', 'https://nodejs.org/en', '--tags', 'dev');
     await bm('add', 'https://plain.org/');
 
-    const out = join(dataDir, 'nested', 'bookmarks.html');
+    const out = join(sb.dataDir, 'nested', 'bookmarks.html');
     const res = await bm('export', '--format', 'html', '-o', out);
     expect(res.code).toBe(0);
     // -o means silence on stdout (and the parent directory is created).
@@ -121,7 +83,7 @@ describe('cli export smoke', () => {
 
   it('-o also works for the default markdown format', async () => {
     await bm('add', 'https://one.dev', '--tags', 'a');
-    const out = join(dataDir, 'bookmarks.md');
+    const out = join(sb.dataDir, 'bookmarks.md');
     const res = await bm('export', '-o', out);
     expect(res.code).toBe(0);
     expect(res.stdout).toBe('');

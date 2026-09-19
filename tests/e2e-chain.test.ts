@@ -1,16 +1,8 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { resolveStorePath } from '../src/store.js';
 import { Bookmark, StoreData } from '../src/types.js';
-
-const run = promisify(execFile);
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const cli = join(repoRoot, 'dist', 'cli.js');
+import { CliSandbox, createCliSandbox } from './helpers.js';
 
 /**
  * The end-to-end smoke chain from the spec's testing decisions: one clean
@@ -21,48 +13,21 @@ const cli = join(repoRoot, 'dist', 'cli.js');
  * which vitest guarantees within a file.
  */
 describe('cli end-to-end chain (one clean store, ordered phases)', () => {
-  let dataDir: string;
-  let homeDir: string;
-  let childEnv: NodeJS.ProcessEnv;
+  let sb: CliSandbox;
 
   beforeAll(() => {
-    dataDir = mkdtempSync(join(tmpdir(), 'bm-e2e-'));
-    homeDir = mkdtempSync(join(tmpdir(), 'bm-e2e-home-'));
-    // Redirect every platform-conventional location into the sandbox so the
-    // chain never touches the real user directory, on any host platform.
     // BM_NO_TITLE_FETCH keeps every add hermetic: no real network requests.
-    childEnv = {
-      ...process.env,
-      APPDATA: dataDir,
-      HOME: homeDir,
-      XDG_CONFIG_HOME: join(homeDir, '.config'),
-      BM_NO_TITLE_FETCH: '1',
-    };
+    sb = createCliSandbox({ noTitleFetch: true });
   });
   afterAll(() => {
-    rmSync(dataDir, { recursive: true, force: true });
-    rmSync(homeDir, { recursive: true, force: true });
+    sb.cleanup();
   });
 
-  const storePath = () => resolveStorePath(childEnv, process.platform);
-
-  interface RunResult {
-    code: number;
-    stdout: string;
-    stderr: string;
-  }
-
-  async function bm(...args: string[]): Promise<RunResult> {
-    try {
-      const { stdout, stderr } = await run(process.execPath, [cli, ...args], {
-        env: childEnv,
-      });
-      return { code: 0, stdout, stderr };
-    } catch (err) {
-      const e = err as { code?: number; stdout?: string; stderr?: string };
-      return { code: e.code ?? -1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' };
-    }
-  }
+  const storePath = () => sb.storePath();
+  const bm = (...args: string[]) => sb.bm(...args);
+  // The chain's shared scratch space (one dir per phase would also work, but
+  // the phases deliberately hand files to each other).
+  const dataDir = () => sb.dataDir;
 
   function readStore(): StoreData {
     return JSON.parse(readFileSync(storePath(), 'utf8')) as StoreData;
@@ -209,7 +174,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
   });
 
   it('phase 4: export writes json, html and md documents to files', async () => {
-    const backup = join(dataDir, 'chain-backup.json');
+    const backup = join(dataDir(), 'chain-backup.json');
     const jsonExport = await bm('export', '--format', 'json', '-o', backup);
     expect(jsonExport.code).toBe(0);
     expect(jsonExport.stdout).toBe('');
@@ -217,7 +182,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
     expect(backupData.bookmarks).toHaveLength(3);
     expect(backupData.nextId).toBe(5);
 
-    const htmlOut = join(dataDir, 'exports', 'bookmarks.html');
+    const htmlOut = join(dataDir(), 'exports', 'bookmarks.html');
     const htmlExport = await bm('export', '--format', 'html', '-o', htmlOut);
     expect(htmlExport.code).toBe(0);
     expect(htmlExport.stdout).toBe('');
@@ -227,7 +192,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
     expect(html).toContain('<DT><H3>dev</H3>');
     expect(html).toContain('<DT><H3>web</H3>');
 
-    const mdOut = join(dataDir, 'exports', 'bookmarks.md');
+    const mdOut = join(dataDir(), 'exports', 'bookmarks.md');
     const mdExport = await bm('export', '-o', mdOut);
     expect(mdExport.code).toBe(0);
     const md = readFileSync(mdOut, 'utf8');
@@ -247,7 +212,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
     expect(empty.code).toBe(0);
     expect(JSON.parse(empty.stdout)).toEqual([]);
 
-    const restored = await bm('import', join(dataDir, 'chain-backup.json'));
+    const restored = await bm('import', join(dataDir(), 'chain-backup.json'));
     expect(restored.code).toBe(0);
     expect(restored.stdout).toContain('Imported 3 new bookmarks, skipped 0 duplicate URLs.');
 
@@ -276,7 +241,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
       '    </DL><p>',
       '</DL><p>',
     ].join('\n');
-    const fixture = join(dataDir, 'browser-bookmarks.html');
+    const fixture = join(dataDir(), 'browser-bookmarks.html');
     writeFileSync(fixture, html, 'utf8');
 
     const res = await bm('import', fixture);

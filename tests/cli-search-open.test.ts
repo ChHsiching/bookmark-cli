@@ -1,60 +1,22 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { Store, resolveStorePath } from '../src/store.js';
+import { Store } from '../src/store.js';
 import { runOpen } from '../src/commands/open.js';
 import { runSearch } from '../src/commands/search.js';
 import { Opener } from '../src/opener.js';
 import { CliError } from '../src/types.js';
+import { CliSandbox, createCliSandbox } from './helpers.js';
 
-const run = promisify(execFile);
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const cli = join(repoRoot, 'dist', 'cli.js');
-
-let dataDir: string;
-let homeDir: string;
-let childEnv: NodeJS.ProcessEnv;
-
+let sb: CliSandbox;
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'bm-cli-'));
-  homeDir = mkdtempSync(join(tmpdir(), 'bm-cli-home-'));
-  // Redirect every platform-conventional location into the sandbox so the
-  // smoke tests never touch the real user directory, on any host platform.
-  childEnv = {
-    ...process.env,
-    APPDATA: dataDir,
-    HOME: homeDir,
-    XDG_CONFIG_HOME: join(homeDir, '.config'),
-  };
+  sb = createCliSandbox();
 });
 afterEach(() => {
-  rmSync(dataDir, { recursive: true, force: true });
-  rmSync(homeDir, { recursive: true, force: true });
+  sb.cleanup();
 });
 
-const storePath = () => resolveStorePath(childEnv, process.platform);
-
-interface RunResult {
-  code: number;
-  stdout: string;
-  stderr: string;
-}
-
-async function bm(...args: string[]): Promise<RunResult> {
-  try {
-    const { stdout, stderr } = await run(process.execPath, [cli, ...args], {
-      env: childEnv,
-    });
-    return { code: 0, stdout, stderr };
-  } catch (err) {
-    const e = err as { code?: number; stdout?: string; stderr?: string };
-    return { code: e.code ?? -1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' };
-  }
-}
+const storePath = () => sb.storePath();
+const bm = (...args: string[]) => sb.bm(...args);
 
 async function seed(): Promise<void> {
   await bm(
@@ -171,7 +133,7 @@ describe('search --open / open <id> with an injected opener', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    store = Store.load(join(dataDir, 'bookmarks.json'));
+    store = Store.load(join(sb.dataDir, 'bookmarks.json'));
     store.add({
       url: 'https://rust-lang.org',
       title: 'The Rust Programming Language',
