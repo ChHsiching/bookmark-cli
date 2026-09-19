@@ -3,8 +3,9 @@ import { Command } from 'commander';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runAdd } from './commands/add.js';
+import { runExport } from './commands/export.js';
 import { runList } from './commands/list.js';
-import { AddOptions, CliError, ListOptions } from './types.js';
+import { AddOptions, CliError, ExportOptions, ListOptions } from './types.js';
 
 /**
  * Build the commander program. Each subcommand is registered here with its
@@ -37,6 +38,15 @@ export function buildProgram(): Command {
     .option('--json', 'machine-readable JSON output')
     .action(async (opts: ListOptions) => {
       await runList(opts);
+    });
+
+  program
+    .command('export')
+    .description('export bookmarks as Markdown, browser-importable HTML, or JSON')
+    .option('--format <format>', 'output format: md | html | json (default: md)')
+    .option('-o, --output <file>', 'write to <file> instead of stdout')
+    .action(async (opts: ExportOptions) => {
+      await runExport(opts);
     });
 
   return program;
