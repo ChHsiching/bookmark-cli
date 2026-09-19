@@ -5,5 +5,10 @@ out/
 
 # node
 node_modules/
-dist/
 *.log
+
+# agent worktrees
+.worktrees/
+
+# vitest cache/reports
+.vitest/
