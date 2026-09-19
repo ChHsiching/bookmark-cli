@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { looksLikeBackup, parseBackupJson, parseNetscapeHtml, ParsedBookmark } from '../importer.js';
 import { Store } from '../store.js';
-import { Bookmark, CliError, ImportOptions, StoreData } from '../types.js';
+import { Bookmark, CliError, StoreData } from '../types.js';
 
 /** Dependencies that tests can inject. */
 export interface ImportDeps {
@@ -109,11 +109,7 @@ function restoreBackup(backup: StoreData, store: Store): void {
  * envelope; otherwise a Netscape DOCTYPE or `<DL>` structure routes to the
  * HTML parser; anything else is an error (stderr, exit code 1 via CliError).
  */
-export async function runImport(
-  file: string,
-  _opts: ImportOptions = {},
-  deps: ImportDeps = {},
-): Promise<void> {
+export async function runImport(file: string, deps: ImportDeps = {}): Promise<void> {
   let text: string;
   try {
     text = readFileSync(file, 'utf8');

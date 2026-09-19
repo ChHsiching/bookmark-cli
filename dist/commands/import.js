@@ -99,7 +99,7 @@ function restoreBackup(backup, store) {
  * envelope; otherwise a Netscape DOCTYPE or `<DL>` structure routes to the
  * HTML parser; anything else is an error (stderr, exit code 1 via CliError).
  */
-export async function runImport(file, _opts = {}, deps = {}) {
+export async function runImport(file, deps = {}) {
     let text;
     try {
         text = readFileSync(file, 'utf8');

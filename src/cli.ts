@@ -19,7 +19,6 @@ import {
   CliError,
   EditOptions,
   ExportOptions,
-  ImportOptions,
   ListOptions,
   RmOptions,
   SearchOptions,
@@ -135,7 +134,7 @@ export function buildProgram(deps: ProgramDeps = {}): Command {
     .command('import')
     .description('import a Netscape bookmark HTML file or a bookmark-cli JSON backup')
     .argument('<file>', 'file to import (format auto-detected)')
-    .action(async (file: string, _opts: ImportOptions) => {
+    .action(async (file: string) => {
       await runImport(file);
     });
 

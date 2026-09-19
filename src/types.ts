@@ -79,7 +79,3 @@ export interface ExportOptions {
   /** Target file: write there (UTF-8, trailing newline) instead of stdout. */
   output?: string;
 }
-
-/** Options for the `import` command (no flags in v1; kept for symmetry). */
-export interface ImportOptions {}
-

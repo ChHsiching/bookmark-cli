@@ -104,7 +104,7 @@ export function buildProgram(deps = {}) {
         .command('import')
         .description('import a Netscape bookmark HTML file or a bookmark-cli JSON backup')
         .argument('<file>', 'file to import (format auto-detected)')
-        .action(async (file, _opts) => {
+        .action(async (file) => {
         await runImport(file);
     });
     return program;
