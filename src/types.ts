@@ -51,3 +51,17 @@ export interface ListOptions {
   tag?: string;
   json?: boolean;
 }
+
+/** Options for the `edit` command. */
+export interface EditOptions {
+  title?: string;
+  note?: string;
+  /** Comma-separated list that replaces the bookmark's tags entirely. */
+  tags?: string;
+}
+
+/** Options for the `rm` command. */
+export interface RmOptions {
+  /** Skip the y/n confirmation prompt. */
+  yes?: boolean;
+}

@@ -3,8 +3,11 @@ import { Command } from 'commander';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runAdd } from './commands/add.js';
+import { runEdit } from './commands/edit.js';
 import { runList } from './commands/list.js';
-import { AddOptions, CliError, ListOptions } from './types.js';
+import { runRm } from './commands/rm.js';
+import { runTags } from './commands/tags.js';
+import { AddOptions, CliError, EditOptions, ListOptions, RmOptions } from './types.js';
 
 /**
  * Build the commander program. Each subcommand is registered here with its
@@ -37,6 +40,36 @@ export function buildProgram(): Command {
     .option('--json', 'machine-readable JSON output')
     .action(async (opts: ListOptions) => {
       await runList(opts);
+    });
+
+  program
+    .command('edit')
+    .description('edit a bookmark by id')
+    .argument('<id>', 'id of the bookmark')
+    .option('--title <title>', 'new title')
+    .option('--note <note>', 'new note')
+    .option(
+      '--tags <tags>',
+      'comma-separated tags replacing the current ones entirely, e.g. "x,y" ("" clears)',
+    )
+    .action(async (id: string, opts: EditOptions) => {
+      await runEdit(id, opts);
+    });
+
+  program
+    .command('rm')
+    .description('delete a bookmark by id (permanent, no trash)')
+    .argument('<id>', 'id of the bookmark')
+    .option('-y, --yes', 'skip the confirmation prompt')
+    .action(async (id: string, opts: RmOptions) => {
+      await runRm(id, opts);
+    });
+
+  program
+    .command('tags')
+    .description('list all tags with their bookmark counts (count desc, then A-Z)')
+    .action(async () => {
+      await runTags();
     });
 
   return program;
