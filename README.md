@@ -16,6 +16,12 @@ npm i -g github:ChHsiching/bookmark-cli
 
 安装后 `bookmark` 与 `bm` 两个命令都可用（本文以下统一用短名 `bm`）。
 
+> **Windows + nvm-windows 用户注意**：部分 npm 版本全局安装 git 依赖时会把包链接到 npm 缓存里的临时克隆目录，安装后命令报"找不到模块"。遇到时加 `--install-links=true` 重装一次即可：
+>
+> ```bash
+> npm i -g --install-links=true github:ChHsiching/bookmark-cli
+> ```
+
 ## 快速上手
 
 ```bash
