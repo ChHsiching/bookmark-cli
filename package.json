@@ -12,8 +12,12 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && vitest run"
+    "test": "npm run build && vitest run",
+    "prepare": "npm run build"
   },
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "commander": "^15.0.0"
   },
