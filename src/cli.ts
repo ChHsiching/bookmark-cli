@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { runAdd } from './commands/add.js';
 import { runEdit } from './commands/edit.js';
 import { runExport } from './commands/export.js';
+import { runImport } from './commands/import.js';
 import { runList } from './commands/list.js';
 import { runOpen } from './commands/open.js';
 import { runRm } from './commands/rm.js';
@@ -15,6 +16,7 @@ import {
   CliError,
   EditOptions,
   ExportOptions,
+  ImportOptions,
   ListOptions,
   RmOptions,
   SearchOptions,
@@ -108,6 +110,14 @@ export function buildProgram(): Command {
     .option('-o, --output <file>', 'write to <file> instead of stdout')
     .action(async (opts: ExportOptions) => {
       await runExport(opts);
+    });
+
+  program
+    .command('import')
+    .description('import a Netscape bookmark HTML file or a bookmark-cli JSON backup')
+    .argument('<file>', 'file to import (format auto-detected)')
+    .action(async (file: string, _opts: ImportOptions) => {
+      await runImport(file);
     });
 
   return program;
