@@ -1,0 +1,25 @@
+{
+  "name": "bookmark-cli",
+  "version": "0.1.0",
+  "description": "Personal command-line bookmark manager: save, search, import and export web bookmarks from the terminal.",
+  "type": "module",
+  "bin": {
+    "bookmark": "dist/cli.js",
+    "bm": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && vitest run"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}
