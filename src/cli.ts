@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runAdd } from './commands/add.js';
 import { runEdit } from './commands/edit.js';
+import { runExport } from './commands/export.js';
 import { runList } from './commands/list.js';
 import { runOpen } from './commands/open.js';
 import { runRm } from './commands/rm.js';
@@ -13,6 +14,7 @@ import {
   AddOptions,
   CliError,
   EditOptions,
+  ExportOptions,
   ListOptions,
   RmOptions,
   SearchOptions,
@@ -97,6 +99,15 @@ export function buildProgram(): Command {
     .description('list all tags with their bookmark counts (count desc, then A-Z)')
     .action(async () => {
       await runTags();
+    });
+
+  program
+    .command('export')
+    .description('export bookmarks as Markdown, browser-importable HTML, or JSON')
+    .option('--format <format>', 'output format: md | html | json (default: md)')
+    .option('-o, --output <file>', 'write to <file> instead of stdout')
+    .action(async (opts: ExportOptions) => {
+      await runExport(opts);
     });
 
   return program;

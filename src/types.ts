@@ -71,3 +71,11 @@ export interface RmOptions {
   /** Skip the y/n confirmation prompt. */
   yes?: boolean;
 }
+
+/** Options for the `export` command. */
+export interface ExportOptions {
+  /** One of 'md' | 'html' | 'json' (validated at runtime). Default: 'md'. */
+  format?: string;
+  /** Target file: write there (UTF-8, trailing newline) instead of stdout. */
+  output?: string;
+}

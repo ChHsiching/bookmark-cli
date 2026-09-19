@@ -144,6 +144,14 @@ export class Store {
     return this.all().sort(byNewestFirst);
   }
 
+  /**
+   * A deep copy of the full stored data (bookmarks + id counter). Read-only
+   * view for consumers such as export; mutating it never touches the store.
+   */
+  snapshot(): StoreData {
+    return structuredClone(this.data);
+  }
+
   getByUrl(url: string): Bookmark | undefined {
     return this.data.bookmarks.find((b) => b.url === url);
   }
