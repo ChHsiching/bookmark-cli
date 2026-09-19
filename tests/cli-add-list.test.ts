@@ -20,11 +20,14 @@ beforeEach(() => {
   homeDir = mkdtempSync(join(tmpdir(), 'bm-cli-home-'));
   // Redirect every platform-conventional location into the sandbox so the
   // smoke tests never touch the real user directory, on any host platform.
+  // BM_NO_TITLE_FETCH keeps these subprocess adds hermetic: since T2 the
+  // default add fetches the page title, which these tests must not do.
   childEnv = {
     ...process.env,
     APPDATA: dataDir,
     HOME: homeDir,
     XDG_CONFIG_HOME: join(homeDir, '.config'),
+    BM_NO_TITLE_FETCH: '1',
   };
 });
 afterEach(() => {

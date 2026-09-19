@@ -2,7 +2,8 @@
 import { Command } from 'commander';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { runAdd } from './commands/add.js';
+import { createClipboardReader } from './clipboard.js';
+import { AddDeps, runAdd } from './commands/add.js';
 import { runEdit } from './commands/edit.js';
 import { runExport } from './commands/export.js';
 import { runList } from './commands/list.js';
@@ -10,6 +11,7 @@ import { runOpen } from './commands/open.js';
 import { runRm } from './commands/rm.js';
 import { runSearch } from './commands/search.js';
 import { runTags } from './commands/tags.js';
+import { createTitleFetcher } from './title-fetcher.js';
 import {
   AddOptions,
   CliError,
@@ -21,11 +23,27 @@ import {
 } from './types.js';
 
 /**
+ * Injectable command dependencies. Commands keep hermetic defaults (no
+ * network, no clipboard); the real implementations are wired in here.
+ */
+export interface ProgramDeps {
+  add?: AddDeps;
+}
+
+/** Real implementations of the add command's injectable dependencies. */
+function defaultAddDeps(): AddDeps {
+  return {
+    fetchTitle: createTitleFetcher(),
+    readClipboard: createClipboardReader(),
+  };
+}
+
+/**
  * Build the commander program. Each subcommand is registered here with its
  * arguments/options only; behavior lives in src/commands/*.ts. Later tickets
  * add new commands by adding files and one registration block here.
  */
-export function buildProgram(): Command {
+export function buildProgram(deps: ProgramDeps = {}): Command {
   const program = new Command();
   program
     .name('bm')
@@ -34,14 +52,14 @@ export function buildProgram(): Command {
 
   program
     .command('add')
-    .description('save a URL as a bookmark')
-    .argument('<url>', 'URL to bookmark (http/https)')
-    .option('--title <title>', 'bookmark title (default: the URL host)')
+    .description('save a URL as a bookmark (from the argument or the clipboard)')
+    .argument('[url]', 'URL to bookmark (http/https); omit to read the clipboard')
+    .option('--title <title>', 'bookmark title (default: the page <title>, then the URL host)')
     .option('--tags <tags>', 'comma-separated tags, e.g. "demo,a"')
     .option('--note <note>', 'free-text note')
     .option('--force', 'update the existing bookmark if the URL is already saved')
-    .action(async (url: string, opts: AddOptions) => {
-      await runAdd(url, opts);
+    .action(async (url: string | undefined, opts: AddOptions) => {
+      await runAdd(url, opts, deps.add ?? defaultAddDeps());
     });
 
   program
