@@ -4,7 +4,9 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runAdd } from './commands/add.js';
 import { runList } from './commands/list.js';
-import { AddOptions, CliError, ListOptions } from './types.js';
+import { runOpen } from './commands/open.js';
+import { runSearch } from './commands/search.js';
+import { AddOptions, CliError, ListOptions, SearchOptions } from './types.js';
 
 /**
  * Build the commander program. Each subcommand is registered here with its
@@ -37,6 +39,24 @@ export function buildProgram(): Command {
     .option('--json', 'machine-readable JSON output')
     .action(async (opts: ListOptions) => {
       await runList(opts);
+    });
+
+  program
+    .command('search')
+    .description('fuzzy-search bookmarks across title, tags, URL and note')
+    .argument('<query>', 'fuzzy query; best matches first')
+    .option('--json', 'machine-readable JSON output')
+    .option('--open', 'open the best match in the default browser')
+    .action(async (query: string, opts: SearchOptions) => {
+      await runSearch(query, opts);
+    });
+
+  program
+    .command('open')
+    .description('open a bookmark by id in the default browser')
+    .argument('<id>', 'id of the bookmark to open')
+    .action(async (id: string) => {
+      await runOpen(id);
     });
 
   return program;

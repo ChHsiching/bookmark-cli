@@ -51,3 +51,9 @@ export interface ListOptions {
   tag?: string;
   json?: boolean;
 }
+
+/** Options for the `search` command. */
+export interface SearchOptions {
+  json?: boolean;
+  open?: boolean;
+}
