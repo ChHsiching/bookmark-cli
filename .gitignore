@@ -7,3 +7,6 @@ out/
 node_modules/
 dist/
 *.log
+
+# agent worktrees
+.worktrees/
