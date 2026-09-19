@@ -75,9 +75,9 @@ describe('groupByTag', () => {
 });
 
 describe('toMarkdown', () => {
-  it('groups by tag, multi-tag bookmarks appear in every group, untagged under 未分类', () => {
+  it('groups by tag, multi-tag bookmarks appear in every group, untagged under 无标签', () => {
     const md = toMarkdown(FIXTURE);
-    // Exact output locks the format: sections in code-point order, 未分类 last,
+    // Exact output locks the format: sections in code-point order, 无标签 last,
     // entries newest-first within a group, notes as indented lines.
     expect(md).toBe(
       [
@@ -98,7 +98,7 @@ describe('toMarkdown', () => {
         '',
         '- [前端工具箱](https://zh.example.com/)',
         '',
-        '## 未分类',
+        '## 无标签',
         '',
         '- [No tags here](https://plain.org/)',
         '  loose page',
@@ -175,7 +175,7 @@ describe('toNetscapeHtml', () => {
     expect(toNetscapeHtml(data)).toBe(expected);
   });
 
-  it('mirrors the Markdown grouping: multi entrances, Chinese tag folder, 未分类 last', () => {
+  it('mirrors the Markdown grouping: multi entrances, Chinese tag folder, 无标签 last', () => {
     const html = toNetscapeHtml(FIXTURE);
     expect(html.startsWith('<!DOCTYPE NETSCAPE-Bookmark-file-1>')).toBe(true);
     expect(html).toContain('<TITLE>Bookmarks</TITLE>');

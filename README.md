@@ -113,7 +113,7 @@ bm tags          # 全部标签及各自计数，count 降序、同数按字母�
 
 ### bm export — 导出
 
-默认输出 Markdown 到 stdout；`-o` 写文件。Markdown 与 HTML 均按标签分组，多标签书签出现在多个分组，无标签书签归"未分类"；JSON 即存储格式（无损备份）：
+默认输出 Markdown 到 stdout；`-o` 写文件。Markdown 与 HTML 均按标签分组，多标签书签出现在多个分组，无标签书签归「无标签」；JSON 即存储格式（无损备份）：
 
 ```bash
 bm export                                    # Markdown 到 stdout

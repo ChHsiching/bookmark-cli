@@ -198,9 +198,11 @@ describe('cli import smoke', () => {
     // import merges both entrances back into one bookmark.
     expect([...(byUrl.get('https://multi.dev/')?.tags ?? [])].sort()).toEqual(['dev', '前端']);
     expect(byUrl.get('https://plain.dev/')?.title).toBe('Plain');
-    // Untagged bookmarks export under the "未分类" presentation group, so on
-    // the way back that group name becomes a real tag (documented asymmetry).
-    expect(byUrl.get('https://plain.dev/')?.tags).toEqual(['未分类']);
+    // Untagged bookmarks export under the "无标签" presentation group, so on
+    // the way back that group name becomes a real tag (documented asymmetry:
+    // the Netscape format has folders only, no way to say "no tag", so the
+    // presentation name and a real tag of the same wording coexist).
+    expect(byUrl.get('https://plain.dev/')?.tags).toEqual(['无标签']);
   });
 
   it('JSON restore into a non-empty store: conflicts keep the live entry, ids stay unique', async () => {

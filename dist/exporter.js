@@ -4,8 +4,15 @@
  * value never ends with a trailing newline - the `export` command owns the
  * final-newline handling for both stdout and `-o <file>`.
  */
-/** Group name under which bookmarks carrying no tags are exported. */
-export const UNTAGGED_GROUP = '未分类';
+/**
+ * Group name under which bookmarks carrying no tags are exported. Wording
+ * follows the CONTEXT.md term list: "无标签" (no tags), never "未分类"
+ * ("分类" is on the Avoid list — this tool has tags only, no categories).
+ * When such an HTML export is re-imported the folder name comes back as a
+ * real tag; that asymmetry is inherent to the Netscape format, which has no
+ * way to express "no tag".
+ */
+export const UNTAGGED_GROUP = '无标签';
 /** Sort shared by list/export: newest first, ties broken by higher id first. */
 function byNewestFirst(a, b) {
     const byTime = Date.parse(b.created_at) - Date.parse(a.created_at);
@@ -15,7 +22,7 @@ function byNewestFirst(a, b) {
  * One group per tag; a bookmark with several tags enters every one of its
  * tag groups (multiple entrances are a feature, ADR-0001). Tag groups are
  * emitted in plain Unicode code-point order (not locale-aware), so the output
- * is byte-identical across platforms. The untagged group ("未分类") always
+ * is byte-identical across platforms. The untagged group ("无标签") always
  * comes last. Duplicate tags on one bookmark are collapsed so it appears once
  * per group even in a hand-edited store.
  */
@@ -90,7 +97,7 @@ function unixSeconds(iso) {
 /**
  * Netscape bookmark HTML (the format Chrome/Firefox import). Structural
  * grouping matches the Markdown export: one first-level folder (`<H3>`) per
- * tag, multiple entrances for multi-tag bookmarks, "未分类" folder last.
+ * tag, multiple entrances for multi-tag bookmarks, "无标签" folder last.
  * Each `<A>` carries ADD_DATE, the Unix seconds of the bookmark's created_at.
  */
 export function toNetscapeHtml(data) {

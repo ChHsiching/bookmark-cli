@@ -53,7 +53,7 @@ async function bm(...args: string[]): Promise<RunResult> {
 }
 
 describe('cli export smoke', () => {
-  it('default format is markdown: grouped by tag, multiple entrances, 未分类 last', async () => {
+  it('default format is markdown: grouped by tag, multiple entrances, 无标签 last', async () => {
     await bm('add', 'https://nodejs.org/en', '--title', 'Node.js', '--tags', 'dev,docs', '--note', 'runtime docs');
     await bm('add', 'https://zh.example.com/', '--title', '前端工具箱', '--tags', '前端,dev');
     await bm('add', 'https://plain.org/');
@@ -62,7 +62,7 @@ describe('cli export smoke', () => {
     expect(res.code).toBe(0);
     expect(res.stdout).toContain('# Bookmarks');
     // Sections appear in deterministic order (code-point order, untagged last).
-    const positions = ['## dev', '## docs', '## 前端', '## 未分类'].map((s) =>
+    const positions = ['## dev', '## docs', '## 前端', '## 无标签'].map((s) =>
       res.stdout.indexOf(s),
     );
     expect(positions.every((p) => p > -1)).toBe(true);
@@ -113,7 +113,7 @@ describe('cli export smoke', () => {
     expect(raw).toContain('<DL><p>');
     expect(raw.match(/<DT><A HREF="/g)).toHaveLength(2);
     expect(raw).toMatch(/ADD_DATE="\d+"/);
-    expect(raw).toContain('<DT><H3>未分类</H3>');
+    expect(raw).toContain('<DT><H3>无标签</H3>');
     // UTF-8 file with exactly one trailing newline.
     expect(raw.endsWith('\n')).toBe(true);
     expect(raw.endsWith('\n\n')).toBe(false);
