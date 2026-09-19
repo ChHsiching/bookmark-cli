@@ -1,0 +1,9 @@
+# local tool/plugin scratch
+.v2c/
+.video_agent/
+out/
+
+# node
+node_modules/
+dist/
+*.log
