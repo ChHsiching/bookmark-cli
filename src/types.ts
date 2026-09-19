@@ -52,6 +52,12 @@ export interface ListOptions {
   json?: boolean;
 }
 
+/** Options for the `search` command. */
+export interface SearchOptions {
+  json?: boolean;
+  open?: boolean;
+}
+
 /** Options for the `edit` command. */
 export interface EditOptions {
   title?: string;

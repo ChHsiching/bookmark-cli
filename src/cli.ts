@@ -5,9 +5,18 @@ import { pathToFileURL } from 'node:url';
 import { runAdd } from './commands/add.js';
 import { runEdit } from './commands/edit.js';
 import { runList } from './commands/list.js';
+import { runOpen } from './commands/open.js';
 import { runRm } from './commands/rm.js';
+import { runSearch } from './commands/search.js';
 import { runTags } from './commands/tags.js';
-import { AddOptions, CliError, EditOptions, ListOptions, RmOptions } from './types.js';
+import {
+  AddOptions,
+  CliError,
+  EditOptions,
+  ListOptions,
+  RmOptions,
+  SearchOptions,
+} from './types.js';
 
 /**
  * Build the commander program. Each subcommand is registered here with its
@@ -40,6 +49,24 @@ export function buildProgram(): Command {
     .option('--json', 'machine-readable JSON output')
     .action(async (opts: ListOptions) => {
       await runList(opts);
+    });
+
+  program
+    .command('search')
+    .description('fuzzy-search bookmarks across title, tags, URL and note')
+    .argument('<query>', 'fuzzy query; best matches first')
+    .option('--json', 'machine-readable JSON output')
+    .option('--open', 'open the best match in the default browser')
+    .action(async (query: string, opts: SearchOptions) => {
+      await runSearch(query, opts);
+    });
+
+  program
+    .command('open')
+    .description('open a bookmark by id in the default browser')
+    .argument('<id>', 'id of the bookmark to open')
+    .action(async (id: string) => {
+      await runOpen(id);
     });
 
   program
