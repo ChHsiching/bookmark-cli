@@ -62,7 +62,14 @@ export function emptyStore(): StoreData {
   return { bookmarks: [], nextId: 1 };
 }
 
-function byNewestFirst(a: Bookmark, b: Bookmark): number {
+/**
+ * The one "newest first" ordering, shared by everything that lists
+ * bookmarks: created_at descending, ties broken by higher id first (ids are
+ * monotonic, so identical timestamps still order deterministically). Used by
+ * Store.listNewestFirst, the exporter's within-group ordering and the search
+ * results tie-break — one comparator so the three can never drift apart.
+ */
+export function byNewestFirst(a: Bookmark, b: Bookmark): number {
   const byTime = Date.parse(b.created_at) - Date.parse(a.created_at);
   return byTime !== 0 ? byTime : b.id - a.id;
 }

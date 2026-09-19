@@ -1,3 +1,4 @@
+import { byNewestFirst } from './store.js';
 import { Bookmark, StoreData } from './types.js';
 
 /**
@@ -20,12 +21,6 @@ export const UNTAGGED_GROUP = '无标签';
 interface TagGroup {
   tag: string;
   bookmarks: Bookmark[];
-}
-
-/** Sort shared by list/export: newest first, ties broken by higher id first. */
-function byNewestFirst(a: Bookmark, b: Bookmark): number {
-  const byTime = Date.parse(b.created_at) - Date.parse(a.created_at);
-  return byTime !== 0 ? byTime : b.id - a.id;
 }
 
 /**

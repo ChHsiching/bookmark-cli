@@ -45,7 +45,14 @@ export class DuplicateUrlError extends Error {
 export function emptyStore() {
     return { bookmarks: [], nextId: 1 };
 }
-function byNewestFirst(a, b) {
+/**
+ * The one "newest first" ordering, shared by everything that lists
+ * bookmarks: created_at descending, ties broken by higher id first (ids are
+ * monotonic, so identical timestamps still order deterministically). Used by
+ * Store.listNewestFirst, the exporter's within-group ordering and the search
+ * results tie-break — one comparator so the three can never drift apart.
+ */
+export function byNewestFirst(a, b) {
     const byTime = Date.parse(b.created_at) - Date.parse(a.created_at);
     return byTime !== 0 ? byTime : b.id - a.id;
 }

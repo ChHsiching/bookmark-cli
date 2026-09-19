@@ -1,3 +1,4 @@
+import { byNewestFirst } from './store.js';
 import { Bookmark } from './types.js';
 
 /**
@@ -128,15 +129,13 @@ export function searchBookmarks(query: string, bookmarks: Bookmark[]): Bookmark[
     .map((bookmark) => ({ bookmark, score: scoreBookmark(q, bookmark) }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => {
+      // Primary key: score descending. The tie-break is exactly the shared
+      // newest-first ordering (created_at desc, then id desc) used by list
+      // and export — reusing byNewestFirst, not re-deriving it here.
       if (b.score !== a.score) {
         return b.score - a.score;
       }
-      const byTime =
-        Date.parse(b.bookmark.created_at) - Date.parse(a.bookmark.created_at);
-      if (byTime !== 0) {
-        return byTime;
-      }
-      return b.bookmark.id - a.bookmark.id;
+      return byNewestFirst(a.bookmark, b.bookmark);
     })
     .map((entry) => entry.bookmark);
 }

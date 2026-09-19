@@ -1,3 +1,4 @@
+import { byNewestFirst } from './store.js';
 /**
  * Hand-written serializers for the three export formats (spec: no third-party
  * libraries). Each is a pure function of the store data. Contract: the return
@@ -13,11 +14,6 @@
  * way to express "no tag".
  */
 export const UNTAGGED_GROUP = '无标签';
-/** Sort shared by list/export: newest first, ties broken by higher id first. */
-function byNewestFirst(a, b) {
-    const byTime = Date.parse(b.created_at) - Date.parse(a.created_at);
-    return byTime !== 0 ? byTime : b.id - a.id;
-}
 /**
  * One group per tag; a bookmark with several tags enters every one of its
  * tag groups (multiple entrances are a feature, ADR-0001). Tag groups are
