@@ -9,3 +9,6 @@ node_modules/
 
 # agent worktrees
 .worktrees/
+
+# vitest cache/reports
+.vitest/
