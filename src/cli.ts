@@ -14,6 +14,7 @@ import { runRm } from './commands/rm.js';
 import { runSearch } from './commands/search.js';
 import { runTags } from './commands/tags.js';
 import { createTitleFetcher } from './title-fetcher.js';
+import { version } from './version.js';
 import {
   AddOptions,
   CliError,
@@ -50,7 +51,7 @@ export function buildProgram(deps: ProgramDeps = {}): Command {
   program
     .name('bm')
     .description('Personal command-line bookmark manager')
-    .version('0.1.0');
+    .version(version);
 
   program
     .command('add')
