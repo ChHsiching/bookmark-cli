@@ -1,8 +1,25 @@
 {
-  "name": "bookmark-cli",
-  "version": "0.1.0",
+  "name": "@chhsiching/bookmark-cli",
+  "version": "1.0.0",
   "description": "Personal command-line bookmark manager: save, search, import and export web bookmarks from the terminal.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChHsiching/bookmark-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ChHsiching/bookmark-cli/issues"
+  },
+  "homepage": "https://github.com/ChHsiching/bookmark-cli#readme",
+  "keywords": [
+    "bookmark",
+    "bookmarks",
+    "cli",
+    "tag",
+    "search",
+    "command-line"
+  ],
   "bin": {
     "bookmark": "dist/cli.js",
     "bm": "dist/cli.js"
@@ -10,9 +27,13 @@
   "engines": {
     "node": ">=20"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && vitest run"
+    "test": "npm run build && vitest run",
+    "prepublishOnly": "npm test"
   },
   "files": [
     "dist"
