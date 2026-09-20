@@ -14,6 +14,7 @@ import { runRm } from './commands/rm.js';
 import { runSearch } from './commands/search.js';
 import { runTags } from './commands/tags.js';
 import { createTitleFetcher } from './title-fetcher.js';
+import { version } from './version.js';
 import { CliError, } from './types.js';
 /** Real implementations of the add command's injectable dependencies. */
 function defaultAddDeps() {
@@ -32,7 +33,7 @@ export function buildProgram(deps = {}) {
     program
         .name('bm')
         .description('Personal command-line bookmark manager')
-        .version('0.1.0');
+        .version(version);
     program
         .command('add')
         .description('save a URL as a bookmark (from the argument or the clipboard)')
