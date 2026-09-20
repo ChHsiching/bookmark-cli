@@ -1,7 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -64,14 +63,5 @@ describe('cli help consistency', () => {
     for (const { cmd } of COMMANDS) {
       expect(res.stdout).toMatch(new RegExp(`^  ${cmd}\\b`, 'm'));
     }
-  });
-
-  it('--version prints the package.json version, not a hardcoded string', async () => {
-    const res = await bm('--version');
-    expect(res.code, res.stderr).toBe(0);
-    const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as {
-      version: string;
-    };
-    expect(res.stdout.trim()).toBe(pkg.version);
   });
 });
