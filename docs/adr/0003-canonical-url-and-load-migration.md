@@ -1,6 +1,6 @@
 # URL 身份以规范形判定,存量在载入时迁移
 
-Bookmark 的身份判定改为规范形(定义见 CONTEXT.md「规范形(Canonical URL)」):保守的 WHATWG 归一只把「同一资源的两种写法」判为等价(scheme/host 小写、去默认端口、空路径补 `/`;query 与 fragment 原样保留,不去 `www.`、不重排参数),非 http(s) scheme 不是网页链接,入库一律拒绝、导入跳过并计数。归一发生在 Store 的接缝上——`add`/`getByUrl` 内部先归一再比较,落盘存规范形,调用方不再拥有归一知识;此前散落在 add/importer/import 三处、宽严不一的校验碎片由此收敛为一处。更激进的归一(去跟踪参数、去 fragment、去 `www.`)被否决:每条规则都带语义争议,而书签的本分是「打开同一页」。存量数据在 `Store.load` 时迁移:内存中归一,归一后碰撞的历史变体合并(保留较小 id、tags 取并集、note 取非空——都非空留更老的、createdAt 取更早),合并条数打 stderr;迁移前经旧 bug 入库的非网页链接在此时移除并计数。
+Bookmark 的身份判定改为规范形(定义见 CONTEXT.md「规范形(Canonical URL)」):保守的 WHATWG 归一只把「同一资源的两种写法」判为等价(scheme/host 小写、去默认端口、空路径补 `/`;query 与 fragment 保留在原位置,不去 `www.`、不重排参数),非 http(s) scheme 不是网页链接,入库一律拒绝、导入跳过并计数。规范形由 URL 标准序列化产生,因而还带上语法级归一(RFC 3986 §6.2.2 一类:路径点段折叠、百分号编码规整、IDN 转 punycode)——这些同样是公认等价,但超出最初列举的最小清单,此为评审后的澄清而非变更。归一发生在 Store 的接缝上——`add`/`getByUrl` 内部先归一再比较,落盘存规范形,调用方不再拥有归一知识;此前散落在 add/importer/import 三处、宽严不一的校验碎片由此收敛为一处。更激进的归一(去跟踪参数、去 fragment、去 `www.`)被否决:每条规则都带语义争议,而书签的本分是「打开同一页」。存量数据在 `Store.load` 时迁移:内存中归一,归一后碰撞的历史变体合并(保留较小 id、tags 取并集、note 取非空——都非空留更老的、createdAt 取更早),合并条数打 stderr;迁移前经旧 bug 入库的非网页链接在此时移除并计数。
 
 ## Consequences
 

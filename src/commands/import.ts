@@ -22,7 +22,7 @@ function looksLikeNetscapeHtml(text: string): boolean {
   return /<!DOCTYPE\s+NETSCAPE-Bookmark-file/i.test(text) || /<DL[\s>]/i.test(text);
 }
 
-function report(added: number, skipped: number, nonWeb = 0): void {
+function report(added: number, skipped: number, nonWeb: number): void {
   const pl = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
   console.log(`Imported ${pl(added, 'new bookmark')}, skipped ${pl(skipped, 'duplicate URL')}.`);
   if (nonWeb > 0) {

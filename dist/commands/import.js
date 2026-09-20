@@ -14,7 +14,7 @@ function tryParseJson(text) {
 function looksLikeNetscapeHtml(text) {
     return /<!DOCTYPE\s+NETSCAPE-Bookmark-file/i.test(text) || /<DL[\s>]/i.test(text);
 }
-function report(added, skipped, nonWeb = 0) {
+function report(added, skipped, nonWeb) {
     const pl = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`;
     console.log(`Imported ${pl(added, 'new bookmark')}, skipped ${pl(skipped, 'duplicate URL')}.`);
     if (nonWeb > 0) {
