@@ -65,7 +65,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
       'css reference',
     );
     expect(two.code).toBe(0);
-    expect(two.stdout).toContain('Added #2 https://developer.mozilla.org');
+    expect(two.stdout).toContain('Added #2 https://developer.mozilla.org/');
 
     const three = await bm(
       'add',
@@ -76,7 +76,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
       'dev',
     );
     expect(three.code).toBe(0);
-    expect(three.stdout).toContain('Added #3 https://news.ycombinator.com (Hacker News)');
+    expect(three.stdout).toContain('Added #3 https://news.ycombinator.com/ (Hacker News)');
 
     // No --title and no network: the title falls back to the URL host.
     const four = await bm('add', 'https://example.com/standup', '--note', 'standup meeting notes');
@@ -133,7 +133,7 @@ describe('cli end-to-end chain (one clean store, ordered phases)', () => {
     const edited = await bm('edit', '3', '--tags', 'news,dev', '--note', 'tech headlines');
     expect(edited.code).toBe(0);
     expect(edited.stdout).toContain('#3');
-    expect(storeByUrl().get('https://news.ycombinator.com')).toMatchObject({
+    expect(storeByUrl().get('https://news.ycombinator.com/')).toMatchObject({
       tags: ['news', 'dev'],
       note: 'tech headlines',
       title: 'Hacker News',

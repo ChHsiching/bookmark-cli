@@ -56,7 +56,7 @@ describe('cli add/list smoke', () => {
     const file = storePath();
     expect(existsSync(file)).toBe(true);
     const raw = readFileSync(file, 'utf8');
-    expect(raw).toContain('"url": "https://example.com"');
+    expect(raw).toContain('"url": "https://example.com/"');
     expect(raw).toContain('"title": "Example Domain"');
     expect(raw.match(/https:\/\/example\.com/g)).toHaveLength(1);
     const parsed = JSON.parse(raw) as { bookmarks: Array<Record<string, unknown>> };
@@ -131,7 +131,7 @@ describe('cli add/list smoke', () => {
     expect(asJson.code).toBe(0);
     const arr = JSON.parse(asJson.stdout) as Array<Record<string, unknown>>;
     expect(arr).toHaveLength(3);
-    expect(arr[0]).toMatchObject({ url: 'https://third.dev' });
+    expect(arr[0]).toMatchObject({ url: 'https://third.dev/' });
     for (const key of ['id', 'url', 'title', 'tags', 'note', 'created_at', 'updated_at']) {
       expect(key in arr[0]).toBe(true);
     }

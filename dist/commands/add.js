@@ -1,5 +1,6 @@
 import { Store } from '../store.js';
 import { CliError } from '../types.js';
+import { canonicalUrl } from '../canonical-url.js';
 /**
  * Title fallback when no fetch happened / no --title given: the host part of
  * the URL (spec: "标题自动抓取失败时回退为域名").
@@ -27,23 +28,17 @@ export function parseTags(raw) {
     }
     return tags;
 }
-/** Validate and return the trimmed URL. Only http(s) with a host is accepted. */
+/**
+ * Validate the URL the user handed us and return its canonical form
+ * (ADR-0003). The identity rules live in canonical-url; this wrapper only
+ * owns the user-facing error wording.
+ */
 function parseUrl(raw) {
-    const url = raw.trim();
-    let parsed;
-    try {
-        parsed = new URL(url);
+    const canonical = canonicalUrl(raw);
+    if (canonical === null) {
+        throw new CliError(`Only http(s) URLs are supported: ${raw.trim()}`);
     }
-    catch {
-        throw new CliError(`Invalid URL: ${url}`);
-    }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        throw new CliError(`Only http(s) URLs are supported: ${url}`);
-    }
-    if (!parsed.hostname) {
-        throw new CliError(`Invalid URL (missing host): ${url}`);
-    }
-    return url;
+    return canonical;
 }
 /**
  * Resolve the URL to bookmark: from the argument when given, otherwise from

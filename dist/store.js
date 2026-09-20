@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { canonicalUrl } from './canonical-url.js';
 import { CliError } from './types.js';
 /**
  * Resolve the store file location using platform conventions, derived from
@@ -57,6 +58,44 @@ export function byNewestFirst(a, b) {
     return byTime !== 0 ? byTime : b.id - a.id;
 }
 /**
+ * Migrate legacy data to canonical URLs (ADR-0003), in memory — the file is
+ * only rewritten on the next save(). Variants that collapse onto one
+ * canonical form merge into the entry with the smaller id: tags union,
+ * first non-empty note, earliest created_at. Non-web links (imported before
+ * the invariant existed) are dropped. Collisions self-extinguish once the
+ * canonical form is persisted.
+ */
+function canonicalizeStoreData(data) {
+    const byCanonical = new Map();
+    let merged = 0;
+    let droppedNonWeb = 0;
+    for (const raw of data.bookmarks) {
+        const canonical = canonicalUrl(raw.url);
+        if (canonical === null) {
+            droppedNonWeb += 1;
+            continue;
+        }
+        const existing = byCanonical.get(canonical);
+        if (existing === undefined) {
+            byCanonical.set(canonical, { ...raw, url: canonical });
+            continue;
+        }
+        let keep = existing;
+        let other = { ...raw, url: canonical };
+        if (other.id < keep.id) {
+            [keep, other] = [other, keep];
+        }
+        keep.tags = [...new Set([...keep.tags, ...other.tags])];
+        if (keep.note === '')
+            keep.note = other.note;
+        if (other.created_at < keep.created_at)
+            keep.created_at = other.created_at;
+        byCanonical.set(canonical, keep);
+        merged += 1;
+    }
+    return { data: { bookmarks: [...byCanonical.values()], nextId: data.nextId }, merged, droppedNonWeb };
+}
+/**
  * The bookmark store: a single human-readable JSON file. The path is
  * injectable so tests never touch the real user directory.
  */
@@ -90,7 +129,11 @@ export class Store {
                 typeof parsed.nextId !== 'number') {
                 throw new Error('expected an object with a "bookmarks" array and a "nextId" number');
             }
-            return new Store(file, parsed);
+            const { data, merged, droppedNonWeb } = canonicalizeStoreData(parsed);
+            if (merged > 0 || droppedNonWeb > 0) {
+                console.error(`Store migrated: merged ${merged} duplicate bookmark(s), removed ${droppedNonWeb} non-web link(s).`);
+            }
+            return new Store(file, data);
         }
         catch (err) {
             throw new CliError(`Store file is corrupted (${file}): ${err.message}`);
@@ -144,25 +187,41 @@ export class Store {
     snapshot() {
         return structuredClone(this.data);
     }
+    /**
+     * Find by URL across spellings: the query is canonicalized (ADR-0003), so
+     * case/port variants of the same page hit the stored canonical form. A
+     * non-web query can never match (nothing non-web is stored).
+     */
     getByUrl(url) {
-        return this.data.bookmarks.find((b) => b.url === url);
+        const canonical = canonicalUrl(url);
+        if (canonical === null)
+            return undefined;
+        return this.data.bookmarks.find((b) => b.url === canonical);
     }
     getById(id) {
         return this.data.bookmarks.find((b) => b.id === id);
     }
     /**
      * Append a new bookmark. Assigns the next id from the persisted counter.
-     * Throws DuplicateUrlError if the URL already exists.
+     * The URL is canonicalized at this seam (ADR-0003) — the canonical form is
+     * what gets stored and compared. Throws DuplicateUrlError if a bookmark
+     * with the same canonical URL exists; CliError defensively if the input is
+     * not a bookmarkable web URL (callers normally reject those earlier, with
+     * user-facing wording).
      */
     add(input) {
-        const existing = this.getByUrl(input.url);
+        const canonical = canonicalUrl(input.url);
+        if (canonical === null) {
+            throw new CliError(`Not a bookmarkable URL: ${input.url}`);
+        }
+        const existing = this.getByUrl(canonical);
         if (existing) {
-            throw new DuplicateUrlError(existing.id, input.url);
+            throw new DuplicateUrlError(existing.id, canonical);
         }
         const now = (input.now ?? new Date()).toISOString();
         const bookmark = {
             id: this.data.nextId,
-            url: input.url,
+            url: canonical,
             title: input.title,
             tags: [...input.tags],
             note: input.note,

@@ -86,7 +86,7 @@ describe('cli search/open smoke', () => {
     expect(arr).toHaveLength(1);
     expect(arr[0]).toMatchObject({
       id: 1,
-      url: 'https://rust-lang.org',
+      url: 'https://rust-lang.org/',
       title: 'The Rust Programming Language',
       tags: ['lang', 'systems'],
     });
@@ -135,7 +135,7 @@ describe('search --open / open <id> with an injected opener', () => {
   beforeEach(() => {
     store = Store.load(join(sb.dataDir, 'bookmarks.json'));
     store.add({
-      url: 'https://rust-lang.org',
+      url: 'https://rust-lang.org/',
       title: 'The Rust Programming Language',
       tags: ['lang'],
       note: '',
@@ -163,22 +163,22 @@ describe('search --open / open <id> with an injected opener', () => {
     // The title hit (weight 100) outranks the note hit (weight 20), even
     // though the note bookmark is newer.
     await runSearch('rust', { open: true }, { store, opener: fakeOpener });
-    expect(openedUrls).toEqual(['https://rust-lang.org']);
-    expect(logSpy).toHaveBeenCalledWith('Opened #1 https://rust-lang.org');
+    expect(openedUrls).toEqual(['https://rust-lang.org/']);
+    expect(logSpy).toHaveBeenCalledWith('Opened #1 https://rust-lang.org/');
   });
 
   it('search --open --json keeps stdout pure JSON; the open notice goes to stderr', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       await runSearch('rust', { open: true, json: true }, { store, opener: fakeOpener });
-      expect(openedUrls).toEqual(['https://rust-lang.org']);
+      expect(openedUrls).toEqual(['https://rust-lang.org/']);
       // stdout saw exactly one write and it parses as the JSON array — no
       // human notice ahead of the payload (that is the --json contract).
       expect(logSpy).toHaveBeenCalledTimes(1);
       const arr = JSON.parse(logSpy.mock.calls[0]![0] as string) as unknown[];
       expect(arr).toHaveLength(2);
       // The notice is kept, on stderr.
-      expect(errSpy).toHaveBeenCalledWith('Opened #1 https://rust-lang.org');
+      expect(errSpy).toHaveBeenCalledWith('Opened #1 https://rust-lang.org/');
     } finally {
       errSpy.mockRestore();
     }
