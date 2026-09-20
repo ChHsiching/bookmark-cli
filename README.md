@@ -8,19 +8,13 @@
 
 ## 安装
 
-要求 Node.js ≥ 20，直接从 GitHub 仓库安装：
+要求 Node.js ≥ 20：
 
 ```bash
-npm i -g github:ChHsiching/bookmark-cli
+npm i -g @chhsiching/bookmark-cli
 ```
 
 安装后 `bookmark` 与 `bm` 两个命令都可用（本文以下统一用短名 `bm`）。
-
-> **Windows + nvm-windows 用户注意**：部分 npm 版本全局安装 git 依赖时会把包链接到 npm 缓存里的临时克隆目录，安装后命令报"找不到模块"。遇到时加 `--install-links=true` 重装一次即可：
->
-> ```bash
-> npm i -g --install-links=true github:ChHsiching/bookmark-cli
-> ```
 
 ## 快速上手
 
@@ -158,6 +152,17 @@ npm install
 npm test           # 构建 + 全部测试
 ```
 
-`dist/`（编译产物）直接提交在仓库里：本工具从 GitHub 安装、不发布 npm registry，提交构建产物让 `npm i -g github:...` 无需在安装时编译。改动 `src/` 后记得 `npm run build` 并把 `dist/` 一并提交。
+`dist/`（编译产物）直接提交在仓库里：npm 发布从工作区打包 `dist/`，提交产物则让 GitHub 兜底安装无需在安装时编译（nvm-windows 上 prepare 现场构建不可靠，见 [docs/adr/0002-npm-distribution.md](docs/adr/0002-npm-distribution.md)）。改动 `src/` 后记得 `npm run build` 并把 `dist/` 一并提交——CI 与发布流程都有 dist 新鲜度门，忘记提交会直接红。
+
+### 发版
+
+在 main 上：
+
+```bash
+npm version patch        # 或 minor / major：改版本号、提交并打 tag
+git push --follow-tags   # 触发 publish workflow：测试 → 发布 npm → 建 GitHub Release
+```
+
+> 无法走 npm 时的兜底安装：`npm i -g github:ChHsiching/bookmark-cli`。Windows + nvm-windows 用户如遇命令报"找不到模块"，加 `--install-links=true` 重装一次。
 
 领域术语见 [CONTEXT.md](CONTEXT.md)；为什么只有标签没有文件夹见 [docs/adr/0001-tags-only-no-folders.md](docs/adr/0001-tags-only-no-folders.md)。
