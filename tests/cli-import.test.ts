@@ -211,6 +211,61 @@ describe('cli import smoke', () => {
     expect(store.nextId).toBe(8);
   });
 
+  it('skips non-web links (place:, javascript:) with a stderr count, importing the rest', async () => {
+    const html = [
+      '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+      '<DL><p>',
+      '    <DT><A HREF="https://nodejs.org/" ADD_DATE="1700000000">Node.js</A>',
+      '    <DT><A HREF="place:folder=BOOKMARK_MENU">Bookmarks Toolbar</A>',
+      '    <DT><A HREF="javascript:void(0)">bookmarklet</A>',
+      '</DL><p>',
+    ].join('\n');
+    const res = await bm('import', writeFixture('mixed.html', html));
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('Imported 1 new bookmark, skipped 0 duplicate URLs.');
+    expect(res.stderr).toContain('Skipped 2 non-web links (not http(s)).');
+
+    const byUrl = storeByUrl();
+    expect(byUrl.size).toBe(1);
+    expect(byUrl.get('https://nodejs.org/')?.title).toBe('Node.js');
+  });
+
+  it('backup restore skips non-web entries and canonicalizes restored urls', async () => {
+    const backup: StoreData = {
+      bookmarks: [
+        {
+          id: 1,
+          url: 'https://Example.com',
+          title: 'Legacy spelling',
+          tags: ['old'],
+          note: '',
+          created_at: '2024-05-01T00:00:00.000Z',
+          updated_at: '2024-05-01T00:00:00.000Z',
+        },
+        {
+          id: 2,
+          url: 'place:folder=BOOKMARK_MENU',
+          title: 'firefox internal',
+          tags: [],
+          note: '',
+          created_at: '2024-05-02T00:00:00.000Z',
+          updated_at: '2024-05-02T00:00:00.000Z',
+        },
+      ],
+      nextId: 3,
+    };
+    const file = writeFixture('legacy-backup.json', JSON.stringify(backup));
+
+    const res = await bm('import', file);
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('Imported 1 new bookmark, skipped 0 duplicate URLs.');
+    expect(res.stderr).toContain('Skipped 1 non-web link (not http(s)).');
+
+    const store = readStore();
+    expect(store.bookmarks).toHaveLength(1);
+    expect(store.bookmarks[0]).toMatchObject({ id: 1, url: 'https://example.com/' });
+  });
+
   it('rejects an unrecognized format with a non-zero exit and a clear error', async () => {
     const file = writeFixture('mystery.txt', 'just some plain text, not HTML nor JSON\n');
     const res = await bm('import', file);

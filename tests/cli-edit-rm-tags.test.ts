@@ -49,7 +49,7 @@ describe('cli edit smoke', () => {
     // Fields not passed on the command line are untouched.
     expect(after.bookmarks[0].title).toBe('Old');
     expect(after.bookmarks[0].note).toBe('keep');
-    expect(after.bookmarks[0].url).toBe('https://example.com');
+    expect(after.bookmarks[0].url).toBe('https://example.com/');
 
     // --tags "" clears the tag set (still full-replacement semantics).
     const cleared = await bm('edit', '1', '--tags', '');
@@ -127,7 +127,7 @@ describe('cli rm smoke', () => {
     expect(res.code).toBe(0);
     expect(res.stdout).toContain('Deleted #2');
     expect(res.stdout).not.toContain('[y/N]');
-    expect(readStore().bookmarks.map((b) => b.url)).toEqual(['https://one.dev']);
+    expect(readStore().bookmarks.map((b) => b.url)).toEqual(['https://one.dev/']);
 
     const long = await bm('rm', '--yes', '1');
     expect(long.code).toBe(0);

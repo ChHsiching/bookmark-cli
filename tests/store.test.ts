@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -75,13 +75,13 @@ describe('Store read/write', () => {
     const raw = readFileSync(file, 'utf8');
     expect(raw.endsWith('\n')).toBe(true);
     expect(raw).toContain('{\n  "bookmarks": [');
-    expect(raw).toContain('"url": "https://example.com"');
+    expect(raw).toContain('"url": "https://example.com/"');
 
     const reloaded = Store.load(file);
     expect(reloaded.all()).toHaveLength(1);
     expect(reloaded.all()[0]).toMatchObject({
       id: 1,
-      url: 'https://example.com',
+      url: 'https://example.com/',
       title: 'Example',
       tags: ['demo'],
       note: 'hi',
@@ -224,10 +224,131 @@ describe('Store ordering', () => {
     store.add({ url: 'https://c.dev', title: 'c', tags: [], note: '', now: sameTime });
     store.add({ url: 'https://d.dev', title: 'd', tags: [], note: '', now: new Date('2026-09-18T00:00:00.000Z') });
     expect(store.listNewestFirst().map((b) => b.url)).toEqual([
-      'https://c.dev',
-      'https://b.dev',
-      'https://d.dev',
-      'https://a.dev',
+      'https://c.dev/',
+      'https://b.dev/',
+      'https://d.dev/',
+      'https://a.dev/',
     ]);
+  });
+});
+
+describe('Store canonical identity (ADR-0003)', () => {
+  it('stores the canonical form and treats case/port variants as the same bookmark', () => {
+    const store = new Store(join(dir, 'bookmarks.json'), emptyStore());
+    const added = store.add({
+      url: 'HTTPS://Example.COM:443',
+      title: 'x',
+      tags: [],
+      note: '',
+    });
+    expect(added.url).toBe('https://example.com/');
+    expect(store.getByUrl('https://example.com')).toBeDefined();
+    expect(() =>
+      store.add({ url: 'https://example.com/', title: 'y', tags: [], note: '' }),
+    ).toThrow(DuplicateUrlError);
+  });
+
+  it('defensively rejects non-web URLs at the seam', () => {
+    const store = new Store(join(dir, 'bookmarks.json'), emptyStore());
+    expect(() => store.add({ url: 'place:folder=MENU', title: 'x', tags: [], note: '' })).toThrow(
+      /Not a bookmarkable URL/,
+    );
+    expect(store.getByUrl('javascript:alert(1)')).toBeUndefined();
+  });
+});
+
+describe('Store load migration (legacy data)', () => {
+  function writeLegacyStore(file: string): void {
+    writeFileSync(
+      file,
+      JSON.stringify(
+        {
+          bookmarks: [
+            {
+              id: 1,
+              url: 'https://Example.com',
+              title: 'older title',
+              tags: ['a'],
+              note: '',
+              created_at: '2026-01-01T00:00:00.000Z',
+              updated_at: '2026-01-01T00:00:00.000Z',
+            },
+            {
+              id: 2,
+              url: 'https://example.com/',
+              title: 'newer title',
+              tags: ['b'],
+              note: 'kept note',
+              created_at: '2026-01-02T00:00:00.000Z',
+              updated_at: '2026-01-02T00:00:00.000Z',
+            },
+            {
+              id: 3,
+              url: 'place:folder=BOOKMARK_MENU',
+              title: 'firefox internal',
+              tags: [],
+              note: '',
+              created_at: '2026-01-03T00:00:00.000Z',
+              updated_at: '2026-01-03T00:00:00.000Z',
+            },
+            {
+              id: 4,
+              url: 'https://other.dev/',
+              title: 'untouched',
+              tags: [],
+              note: '',
+              created_at: '2026-01-04T00:00:00.000Z',
+              updated_at: '2026-01-04T00:00:00.000Z',
+            },
+          ],
+          nextId: 5,
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+  }
+
+  it('merges case-variant duplicates and drops non-web links, reporting both to stderr', () => {
+    const file = join(dir, 'bookmarks.json');
+    writeLegacyStore(file);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const store = Store.load(file);
+
+    expect(store.all()).toHaveLength(2);
+    const merged = store.getById(1);
+    expect(merged).toMatchObject({
+      id: 1,
+      url: 'https://example.com/',
+      title: 'older title',
+      tags: ['a', 'b'],
+      note: 'kept note',
+      created_at: '2026-01-01T00:00:00.000Z',
+    });
+    expect(store.all().map((b) => b.id)).toEqual([1, 4]);
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err.mock.calls[0][0]).toContain('merged 1 duplicate bookmark');
+    expect(err.mock.calls[0][0]).toContain('removed 1 non-web link');
+
+    // Persisted: the next load is already canonical, so the notice self-extinguishes.
+    store.save();
+    err.mockClear();
+    const reloaded = Store.load(file);
+    expect(reloaded.all()).toHaveLength(2);
+    expect(err).not.toHaveBeenCalled();
+    err.mockRestore();
+  });
+
+  it('is silent when the file is already canonical', () => {
+    const file = join(dir, 'bookmarks.json');
+    const store = new Store(file, emptyStore());
+    store.add({ url: 'https://a.dev/', title: 'a', tags: [], note: '' });
+    store.save();
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    Store.load(file);
+    expect(err).not.toHaveBeenCalled();
+    err.mockRestore();
   });
 });

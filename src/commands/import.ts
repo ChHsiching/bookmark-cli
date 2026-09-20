@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { canonicalUrl } from '../canonical-url.js';
 import { looksLikeBackup, parseBackupJson, parseNetscapeHtml, ParsedBookmark } from '../importer.js';
 import { Store } from '../store.js';
 import { Bookmark, CliError, StoreData } from '../types.js';
@@ -21,30 +22,43 @@ function looksLikeNetscapeHtml(text: string): boolean {
   return /<!DOCTYPE\s+NETSCAPE-Bookmark-file/i.test(text) || /<DL[\s>]/i.test(text);
 }
 
-function report(added: number, skipped: number): void {
+function report(added: number, skipped: number, nonWeb: number): void {
   const pl = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
   console.log(`Imported ${pl(added, 'new bookmark')}, skipped ${pl(skipped, 'duplicate URL')}.`);
+  if (nonWeb > 0) {
+    // Browser exports routinely carry place:/about: entries (ADR-0003: only
+    // web URLs are bookmarkable). Skipped, never silent — stderr so stdout
+    // stays script-friendly.
+    console.error(`Skipped ${pl(nonWeb, 'non-web link')} (not http(s)).`);
+  }
 }
 
 /**
  * HTML path: every parsed entry goes through the ordinary Store creation
  * logic, so ids come from the live counter and ADD_DATE decides created_at.
- * URL identity first, as everywhere: an entry whose URL is already stored is
- * skipped untouched. Within one file the same URL may appear several times
- * (our own HTML export gives multi-tag bookmarks one entrance per tag
- * folder, and browsers allow the same URL in several folders): the first
- * occurrence fixes title/created_at, later occurrences only contribute their
- * tags; they count as skipped because no new bookmark is created.
+ * URL identity first, as everywhere — judged on the canonical form
+ * (ADR-0003): an entry whose URL is already stored is skipped untouched, and
+ * spellings of the same page within one file (our own HTML export gives
+ * multi-tag bookmarks one entrance per tag folder) merge into the first
+ * occurrence: it fixes title/created_at, later occurrences only contribute
+ * their tags; they count as skipped because no new bookmark is created.
+ * Non-web links (place:, javascript:, …) are skipped and counted to stderr.
  */
 function importHtml(parsed: ParsedBookmark[], store: Store, now: () => Date): void {
   const byUrl = new Map<string, ParsedBookmark>();
   let skipped = 0;
+  let nonWeb = 0;
   for (const bm of parsed) {
-    if (store.getByUrl(bm.url) !== undefined) {
+    const canonical = canonicalUrl(bm.url);
+    if (canonical === null) {
+      nonWeb += 1;
+      continue;
+    }
+    if (store.getByUrl(canonical) !== undefined) {
       skipped += 1;
       continue;
     }
-    const acc = byUrl.get(bm.url);
+    const acc = byUrl.get(canonical);
     if (acc) {
       for (const tag of bm.tags) {
         if (!acc.tags.includes(tag)) acc.tags.push(tag);
@@ -52,7 +66,7 @@ function importHtml(parsed: ParsedBookmark[], store: Store, now: () => Date): vo
       skipped += 1;
       continue;
     }
-    byUrl.set(bm.url, { ...bm, tags: [...bm.tags] });
+    byUrl.set(canonical, { ...bm, url: canonical, tags: [...bm.tags] });
   }
   for (const bm of byUrl.values()) {
     store.add({
@@ -64,7 +78,7 @@ function importHtml(parsed: ParsedBookmark[], store: Store, now: () => Date): vo
     });
   }
   store.save();
-  report(byUrl.size, skipped);
+  report(byUrl.size, skipped, nonWeb);
 }
 
 /**
@@ -73,10 +87,12 @@ function importHtml(parsed: ParsedBookmark[], store: Store, now: () => Date): vo
  * round-trip on an empty store reproduces the store byte for byte. Identity
  * rule still wins over restore: a backup URL that already exists in the live
  * store is skipped and the live entry is left untouched (conservative - an
- * import never overwrites live data). When a live bookmark already occupies
- * a backup id under a different URL, the restored entry is handed a fresh id
- * from the merged counter; the counter never drops below either side's
- * nextId, keeping deleted-id gaps from being reused.
+ * import never overwrites live data). URLs are canonicalized at restore
+ * (ADR-0003) and non-web entries are skipped with a count — the store holds
+ * canonical web URLs only. When a live bookmark already occupies a backup id
+ * under a different URL, the restored entry is handed a fresh id from the
+ * merged counter; the counter never drops below either side's nextId,
+ * keeping deleted-id gaps from being reused.
  */
 function restoreBackup(backup: StoreData, store: Store): void {
   const current = store.snapshot();
@@ -85,13 +101,20 @@ function restoreBackup(backup: StoreData, store: Store): void {
   let nextId = Math.max(current.nextId, backup.nextId, 1);
   const restored: Bookmark[] = [];
   let skipped = 0;
+  let nonWeb = 0;
   for (const entry of backup.bookmarks) {
-    if (keptUrls.has(entry.url)) {
+    const canonical = canonicalUrl(entry.url);
+    if (canonical === null) {
+      nonWeb += 1;
+      continue;
+    }
+    if (keptUrls.has(canonical)) {
       skipped += 1;
       continue;
     }
-    keptUrls.add(entry.url); // also guards duplicate URLs inside the backup
+    keptUrls.add(canonical); // also guards duplicate URLs inside the backup
     const bm = structuredClone(entry);
+    bm.url = canonical;
     if (usedIds.has(bm.id)) {
       bm.id = nextId;
     }
@@ -100,7 +123,7 @@ function restoreBackup(backup: StoreData, store: Store): void {
     restored.push(bm);
   }
   Store.adopt(store.path, { bookmarks: [...current.bookmarks, ...restored], nextId }).save();
-  report(restored.length, skipped);
+  report(restored.length, skipped, nonWeb);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { Store } from '../store.js';
 import { AddOptions, CliError } from '../types.js';
 import { ClipboardReader } from '../clipboard.js';
+import { canonicalUrl } from '../canonical-url.js';
 import { TitleFetcher } from '../title-fetcher.js';
 
 /**
@@ -45,22 +46,17 @@ export function parseTags(raw: string | undefined): string[] {
   return tags;
 }
 
-/** Validate and return the trimmed URL. Only http(s) with a host is accepted. */
+/**
+ * Validate the URL the user handed us and return its canonical form
+ * (ADR-0003). The identity rules live in canonical-url; this wrapper only
+ * owns the user-facing error wording.
+ */
 function parseUrl(raw: string): string {
-  const url = raw.trim();
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    throw new CliError(`Invalid URL: ${url}`);
+  const canonical = canonicalUrl(raw);
+  if (canonical === null) {
+    throw new CliError(`Only http(s) URLs are supported: ${raw.trim()}`);
   }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new CliError(`Only http(s) URLs are supported: ${url}`);
-  }
-  if (!parsed.hostname) {
-    throw new CliError(`Invalid URL (missing host): ${url}`);
-  }
-  return url;
+  return canonical;
 }
 
 /**
